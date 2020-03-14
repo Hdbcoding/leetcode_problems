@@ -1,5 +1,11 @@
 
 public class p222_fancy {
+    // Given a complete binary tree, count the number of nodes.
+    // Note:
+    // Definition of a complete binary tree from Wikipedia:
+    // In a complete binary tree every level, except possibly the last, is
+    // completely filled, and all nodes in the last level are as far left as
+    // possible. It can have between 1 and 2h nodes inclusive at the last level h.
     class Solution {
         int countNodes(TreeNode root) {
             if (root == null)
@@ -44,7 +50,8 @@ public class p222_fancy {
             // traverse down to the lowest level of the tree
             for (int i = 0; i < d; i++) {
                 p = left + (right - left) / 2;
-                // given a desired node m, at each node that we traverse through m will be in the left or right subtree
+                // given a desired node m, at each node that we traverse through m will be in
+                // the left or right subtree
                 if (m <= p) {
                     node = node.left;
                     right = p;
