@@ -1,9 +1,5 @@
 
 public class p222_fancy {
-    public static void main(String[] args) {
-
-    }
-
     class Solution {
         int countNodes(TreeNode root) {
             if (root == null)
