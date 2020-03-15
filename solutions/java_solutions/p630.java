@@ -3,6 +3,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 
 public class p630 {
     // Course Schedule III - hard
@@ -18,6 +19,9 @@ public class p630 {
     public static void main(String[] args) {
         runTest(new int[] { 100, 200, 200, 1300, 1000, 1250, 2000, 3200 }, 3);
         runTest(new int[] { 5, 15, 3, 19, 6, 7, 2, 10, 5, 16, 8, 14, 10, 11, 2, 19 }, 5);
+        runTest(new int[] { 100, 2, 32, 50 }, 1);
+        runTest(new int[] { 7, 17, 3, 12, 10, 20, 9, 10, 5, 20, 10, 19, 4, 18 }, 4);
+        runTest(new int[] { 9, 20, 4, 14, 4, 10, 6, 7, 2, 14, 8, 10, 6, 6, 5, 7 }, 4);
     }
 
     static void runTest(int[] data, int expected) {
@@ -50,10 +54,58 @@ public class p630 {
 
     static class Solution {
         public int scheduleCourse(int[][] courses) {
-            return withComplexMemoTable(courses);
+            return iteratively(courses);
         }
 
-        int withComplexMemoTable(int[][] courses){
+        int iteratively(int[][] courses) {
+            Arrays.sort(courses, new CourseComparator());
+            PriorityQueue<Integer> q = new PriorityQueue<>(new CourseLengthComparator(courses));
+            int timeFree = 0;
+            int count = 0;
+            for (int i = 0; i < courses.length; i++) {
+                q.add(i);
+                // greedily take on courses as available
+                if (timeFree + courses[i][0] <= courses[i][1]) {
+                    timeFree += courses[i][0];
+                    count++;
+                } else {
+                    // if I can't take this course, mark the most restrictive course as not taken
+                    int max_i = q.poll();
+                    // if i am keeping this course and dropping the other course
+                    if (courses[max_i][0] > courses[i][0])
+                        timeFree += courses[i][0] - courses[max_i][0];
+                    courses[max_i][0] = -1;
+                }
+            }
+            return count;
+        }
+
+        // simple memo table runs out of memory on test 67
+        int withSimpleMemoTable(int[][] courses) {
+            Arrays.sort(courses, new CourseComparator());
+            // lots of unused slots if ending times have large gaps!
+            int latestEnding = courses[courses.length - 1][1];
+            Integer[][] memo = new Integer[courses.length][latestEnding + 1];
+            return recursively(0, 0, courses, memo);
+        }
+
+        int recursively(int timeFree, int course, int[][] courses, Integer[][] memo) {
+            if (course == courses.length)
+                return 0;
+            if (memo[course][timeFree] != null)
+                return memo[course][timeFree];
+
+            int with = 0;
+            if (timeFree + courses[course][0] <= courses[course][1]) {
+                with = recursively(timeFree + courses[course][0], course + 1, courses, memo) + 1;
+            }
+            int without = recursively(timeFree, course + 1, courses, memo);
+
+            return memo[course][timeFree] = Math.max(with, without);
+        }
+
+        // complex memo table runs out of time on test 67
+        int withComplexMemoTable(int[][] courses) {
             Arrays.sort(courses, new CourseComparator());
             List<HashMap<Integer, Integer>> memo = generateMemoTable(courses.length);
             return recursively(0, 0, courses, memo);
@@ -68,14 +120,11 @@ public class p630 {
         }
 
         int recursively(int timeFree, int course, int[][] courses, List<HashMap<Integer, Integer>> memo) {
-            if (course == courses.length) {
+            if (course == courses.length)
                 return 0;
-            }
 
-            if (memo.get(course).containsKey(timeFree)) {
-                int cached = memo.get(course).get(timeFree);
-                return cached;
-            }
+            if (memo.get(course).containsKey(timeFree))
+                return memo.get(course).get(timeFree);
 
             // calculate result of not taking this course
             int result = recursively(timeFree, course + 1, courses, memo);
@@ -88,17 +137,26 @@ public class p630 {
             }
 
             memo.get(course).put(timeFree, result);
-            return result;
-
+            return memo.get(course).put(timeFree, result);
         }
 
         class CourseComparator implements Comparator<int[]> {
             @Override
             public int compare(int[] a, int[] b) {
-                // if equally urgent, prefer courses that are shorter
-                if (a[1] == b[1])
-                    return a[0] - b[0];
                 return a[1] - b[1];
+            }
+        }
+
+        class CourseLengthComparator implements Comparator<Integer> {
+            int[][] courses;
+
+            CourseLengthComparator(int[][] courses) {
+                this.courses = courses;
+            }
+
+            @Override
+            public int compare(Integer a, Integer b) {
+                return courses[b][0] - courses[a][0];
             }
         }
     }
