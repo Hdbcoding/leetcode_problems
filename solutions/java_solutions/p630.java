@@ -50,6 +50,10 @@ public class p630 {
 
     static class Solution {
         public int scheduleCourse(int[][] courses) {
+            return withComplexMemoTable(courses);
+        }
+
+        int withComplexMemoTable(int[][] courses){
             Arrays.sort(courses, new CourseComparator());
             List<HashMap<Integer, Integer>> memo = generateMemoTable(courses.length);
             return recursively(0, 0, courses, memo);
@@ -64,19 +68,12 @@ public class p630 {
         }
 
         int recursively(int timeFree, int course, int[][] courses, List<HashMap<Integer, Integer>> memo) {
-            // String spacer = getSpacer(course);
-            // System.out.println(spacer + "considering timeFree: " + timeFree + ", course: " + course);
-
             if (course == courses.length) {
-                // System.out.println(spacer + "base result: " + 0);
-                // return reportResult(0, spacer, timeFree, course);
                 return 0;
             }
 
             if (memo.get(course).containsKey(timeFree)) {
                 int cached = memo.get(course).get(timeFree);
-                // System.out.println(spacer + "cached result: " + cached);
-                // return reportResult(cached, spacer, timeFree, course);
                 return cached;
             }
 
@@ -91,20 +88,8 @@ public class p630 {
             }
 
             memo.get(course).put(timeFree, result);
-            // return reportResult(result, spacer, timeFree, course);
             return result;
 
-        }
-
-        int reportResult(int result, String spacer, int timeFree, int course) {
-            System.out.println(spacer + "result of timeFree: " + timeFree + ", course: " + course + ": " + result);
-            return result;
-        }
-        
-        String getSpacer(int n) {
-            char[] sc = new char[n];
-            Arrays.fill(sc, '\t');
-            return new String(sc);
         }
 
         class CourseComparator implements Comparator<int[]> {
