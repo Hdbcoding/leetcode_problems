@@ -115,7 +115,7 @@ public class p127 {
         int bfs(int s, int end, Graph g) {
             // shortest path in unweighted graph is essentially bfs
             Queue<Integer> q = new LinkedList<>();
-            int[] dist = new int[s + 1];
+            int[] dist = new int[g.s];
             Arrays.fill(dist, -1);
             dist[s] = 1;
             q.add(s);
