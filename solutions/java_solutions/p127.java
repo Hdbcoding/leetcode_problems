@@ -49,8 +49,7 @@ public class p127 {
         }
 
         int useAdjacencyList(String beginWord, int end, List<String> wordList) {
-            Graph g = generateWithPairwiseComparisons(beginWord, wordList);
-
+            Graph g = generateWithHashMap(beginWord, wordList);
             return bfs(g.s - 1, end, g);
         }
 
@@ -69,7 +68,7 @@ public class p127 {
                 List<Integer> set = map.get(key);
                 for (int i = 0; i < set.size(); i++) {
                     for (int j = i + 1; j < set.size(); j++) {
-                        g.addEdge(i, j);
+                        g.addEdge(set.get(i), set.get(j));
                     }
                 }
             }
@@ -79,7 +78,7 @@ public class p127 {
 
         void addWord(String word, int l, int i, Map<String, List<Integer>> map) {
             for (int j = 0; j < l; j++) {
-                String key = word.substring(0, j) + "*" + word.substring(i + 1, l);
+                String key = word.substring(0, j) + "*" + word.substring(j + 1, l);
                 List<Integer> set;
                 if (map.containsKey(key)) {
                     set = map.get(key);
