@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 public class p140 {
-    // Word Beak II- Hard
+    // Word Break II- Hard
 
     // Given a non-empty string s and a dictionary wordDict containing a list of
     // non-empty words, add spaces in s to construct a sentence where each word is a
