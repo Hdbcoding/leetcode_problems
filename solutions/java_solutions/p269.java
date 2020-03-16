@@ -2,6 +2,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class p269 {
+    // Alien Dictionary - Hard
+
     // There is a new alien language which uses the latin alphabet. However, the
     // order among letters are unknown to you. You receive a list of non-empty words
     // from the dictionary, where words are sorted lexicographically by the rules of

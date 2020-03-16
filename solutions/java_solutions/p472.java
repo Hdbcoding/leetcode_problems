@@ -5,7 +5,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class p472 {
-    // Concatenated words - hard
+    // Concatenated words - Hard
+    
     // Given a list of words (without duplicates), please write a program that
     // returns all concatenated words in the given list of words.
     // A concatenated word is defined as a string that is comprised entirely of at

@@ -4,7 +4,9 @@ import java.util.Arrays;
 
 public class p22 {
     // Generate Parentheses - Medium
-    // Given n pairs of parentheses, write a function to generate all combinations of well-formed parentheses.
+    
+    // Given n pairs of parentheses, write a function to generate all combinations
+    // of well-formed parentheses.
 
     public static void main(String[] args) {
         Solution s = new Solution();
@@ -19,7 +21,7 @@ public class p22 {
         result = s.recursively(n);
         System.out.println(n + ": " + Arrays.toString(result.toArray()));
     }
-    
+
     static class Solution {
         // using bottom up memoization
         public List<String> generateParenthesis(int n) {
@@ -28,10 +30,10 @@ public class p22 {
             memo.get(0).add("");
 
             // f0: "",
-            // f1: ()               <-- (f0)f0
-            // f2: ()(), (())       <-- (f0)f1, (f1)f0
-            // f3: ()()(), ()(()),  <-- (f0)f2, (f1)f1, (f2)f0
-            //     (())(), (()()), ((()))
+            // f1: () <-- (f0)f0
+            // f2: ()(), (()) <-- (f0)f1, (f1)f0
+            // f3: ()()(), ()(()), <-- (f0)f2, (f1)f1, (f2)f0
+            // (())(), (()()), ((()))
             // fn: (f0)fn-1, (f1)fn-2, ... (fn-2)f1, (fn-1)f0
 
             // for each set size, building up to the full size
@@ -52,7 +54,7 @@ public class p22 {
 
             return memo.get(memo.size() - 1);
         }
-        
+
         public List<String> recursively(int n) {
             StringBuilder sb = new StringBuilder();
             List<String> set = new ArrayList<String>();
@@ -68,8 +70,7 @@ public class p22 {
             }
 
             // can only open
-            if (open <= 0 && opened < n)
-            {
+            if (open <= 0 && opened < n) {
                 int l = sb.length();
                 sb.append('(');
                 recurse(sb, set, open + 1, opened + 1, n);

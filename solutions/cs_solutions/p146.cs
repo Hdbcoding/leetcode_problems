@@ -1,5 +1,7 @@
 public class p146
 {
+    // LRU Cache - Medium
+
     // Design and implement a data structure for Least Recently Used (LRU) cache. 
     // It should support the following operations: get and put.
     // get(key) - Get the value (will always be positive) of the key if the 

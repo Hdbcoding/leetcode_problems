@@ -1,6 +1,8 @@
 import java.util.HashSet;
 
 public class p929 {
+    // Unique Email Addresses - Easy
+
     // Every email consists of a local name and a domain name, separated by the @
     // sign.
 

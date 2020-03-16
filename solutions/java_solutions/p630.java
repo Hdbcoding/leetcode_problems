@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 public class p630 {
-    // Course Schedule III - hard
+    // Course Schedule III - Hard
 
     // There are n different online courses numbered from 1 to n. Each course has
     // some duration(course length) t and closed on dth day. A course should be

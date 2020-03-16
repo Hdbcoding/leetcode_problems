@@ -1,4 +1,6 @@
 public class p222_simple {
+    // Count Complete Tree Nodes - Medium
+
     // Given a complete binary tree, count the number of nodes.
     // Note:
     // Definition of a complete binary tree from Wikipedia:
