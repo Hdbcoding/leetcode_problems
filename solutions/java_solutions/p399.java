@@ -3,6 +3,8 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Stack;
+import java.util.Queue;
+import java.util.LinkedList;
 
 public class p399 {
     // Evaluate division - Medium
@@ -43,13 +45,15 @@ public class p399 {
     static class Solution {
         public double[] calcEquation(List<List<String>> equations, double[] values, List<List<String>> queries) {
             Graph g = parseGraph(equations, values);
+            return usingBFS(g, queries);
+        }
+
+        double[] usingBellmanFord(Graph g, List<List<String>> queries) {
             double[] responses = new double[queries.size()];
-            // idea - sort queries by their source to preserve dist array
             for (int i = 0; i < queries.size(); i++) {
                 List<String> query = queries.get(i);
                 responses[i] = bellmanFord(query.get(0), query.get(1), g);
             }
-
             return responses;
         }
 
@@ -61,6 +65,8 @@ public class p399 {
             int start = g.map.get(a);
             int end = g.map.get(b);
             Double[] dist = new Double[g.s];
+            int[] pred = new int[g.s];
+            Arrays.fill(pred, -1);
             Stack<Integer> s = new Stack<>();
             boolean[] visited = new boolean[g.s];
             dist[start] = 0.;
@@ -77,7 +83,7 @@ public class p399 {
                     for (int i = 0; i < adj.size(); i++) {
                         int v = adj.get(i);
                         double c = w.get(i);
-                        hasChanges |= relax(u, v, c, dist);
+                        hasChanges |= relax(u, v, c, dist, pred);
                         if (!visited[v])
                             s.add(v);
                     }
@@ -86,12 +92,48 @@ public class p399 {
                     break;
             }
 
-            return dist[end] == null ? -1 : Math.pow(2, dist[end]);
+            return dist[end] == null ? -1 : Math.exp(dist[end]);
         }
 
-        boolean relax(int u, int v, double w, Double[] dist) {
+        double[] usingBFS(Graph g, List<List<String>> queries) {
+            double[] responses = new double[queries.size()];
+            for (int i = 0; i < queries.size(); i++) {
+                List<String> query = queries.get(i);
+                responses[i] = bfs(query.get(0), query.get(1), g);
+            }
+            return responses;
+        }
+
+        double bfs(String a, String b, Graph g) {
+            if (!g.map.containsKey(a))
+                return -1;
+            if (!g.map.containsKey(b))
+                return -1;
+            int start = g.map.get(a);
+            int end = g.map.get(b);
+            Queue<Integer> q = new LinkedList<>();
+            Double[] dist = new Double[g.s];
+            dist[start] = 0.;
+            q.add(start);
+            while (!q.isEmpty()) {
+                int u = q.poll();
+                List<Integer> adj = g.adj.get(u);
+                List<Double> weights = g.w.get(u);
+                for (int i = 0; i < adj.size(); i++) {
+                    int v = adj.get(i);
+                    if (dist[v] == null) {
+                        dist[v] = dist[u] + weights.get(i);
+                        q.add(v);
+                    }
+                }
+            }
+            return dist[end] == null ? -1 : Math.exp(dist[end]);
+        }
+
+        boolean relax(int u, int v, double w, Double[] dist, int[] pred) {
             if (dist[v] == null || dist[v] > dist[u] + w) {
                 dist[v] = dist[u] + w;
+                pred[v] = u;
                 return true;
             }
             return false;
@@ -110,10 +152,7 @@ public class p399 {
         class Graph {
             HashMap<String, Integer> map;
             ArrayList<ArrayList<Integer>> adj;
-            // weight - want lg(m)
             ArrayList<ArrayList<Double>> w;
-            // multiplier - only for reference
-            ArrayList<ArrayList<Double>> m;
 
             int s;
 
@@ -121,21 +160,19 @@ public class p399 {
                 this.map = new HashMap<>();
                 this.adj = new ArrayList<>();
                 this.w = new ArrayList<>();
-                this.m = new ArrayList<>();
             }
 
             void addEdge(String a, String b, double m) {
                 int u = getOrAdd(a);
                 int v = getOrAdd(b);
 
-                adj.get(u).add(v);
-                w.get(u).add(Math.log(m));
-                this.m.get(u).add(m);
+                double lgm = Math.log(m);
 
-                m = 1 / m;
+                adj.get(u).add(v);
+                w.get(u).add(lgm);
+
                 adj.get(v).add(u);
-                w.get(v).add(Math.log(m));
-                this.m.get(v).add(m);
+                w.get(v).add(-lgm);
             }
 
             int getOrAdd(String a) {
@@ -143,8 +180,6 @@ public class p399 {
                     map.put(a, s++);
                     adj.add(new ArrayList<>());
                     w.add(new ArrayList<>());
-                    m.add(new ArrayList<>());
-
                 }
                 return map.get(a);
             }
