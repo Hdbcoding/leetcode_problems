@@ -9,7 +9,7 @@ public class p4
     {
         public double FindMedianSortedArrays(int[] nums1, int[] nums2)
         {
-            // ensure that nums1 is the bigger set
+            // ensure that nums1 is the smaller set
             if (nums2.Length < nums1.Length) return FindMedianSortedArrays(nums2, nums1);
 
             var imin = 0;
