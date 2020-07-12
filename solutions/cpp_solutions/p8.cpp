@@ -1,5 +1,7 @@
 #include <limits>
 #include <string>
+using namespace std;
+
 // String to Integer (atoi) - Medium
 
 // Implement atoi which converts a string to an integer.
