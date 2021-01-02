@@ -1,6 +1,8 @@
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
+#include <set>
 using namespace std;
 
 // 3Sum - Medium
@@ -50,6 +52,7 @@ public:
 
     // runtime n^3
     // space only limited by the size of the solution set (i.e., number of triples)
+    // this guy times out
     vector<vector<int>> bruteForce(vector<int> &nums)
     {
         sort(nums.begin(), nums.end());
@@ -79,6 +82,16 @@ public:
         return result;
     }
 
+    vector<int> getVector(int a, int b, int c)
+    {
+        vector<int> triplet{a, b, c};
+        sort(triplet.begin(), triplet.end());
+        return triplet;
+    }
+
+    // slow, but fast enough to pass.
+    // n^2 runtime, no sorting of the input array
+    // ~750ms
     vector<vector<int>> withMap(vector<int> &nums)
     {
         // count the number of times each element appears
@@ -89,46 +102,118 @@ public:
             numCounts[nums[i]]++;
         }
 
-        vector<vector<int>> result;
+        set<vector<int>> result;
         int currentSum = 0;
         std::unordered_map<int, int>::const_iterator got;
         for (auto it = numCounts.begin(); it != numCounts.end(); ++it)
         {
             currentSum = it->first;
+            it->second--;
 
             // if it appears twice, see if that works
-            if (it->second > 1)
+            if (it->second > 0)
             {
                 currentSum += it->first;
-                got = numCounts.find(-1 * currentSum);
-                if (got != numCounts.end())
-                    result.push_back({it->first, it->first, got->first});
-                currentSum -= it->first;
-            }
+                it->second--;
 
-            // if current sum is even, check for a double
-            if (currentSum % 2 == 0)
-            {
-                got = numCounts.find(-1 * currentSum / 2);
-                if (got != numCounts.end() && got->second > 1)
-                {
-                    result.push_back({it->first, got->first, got->first});
-                }
+                got = numCounts.find(-1 * currentSum);
+                if (got != numCounts.end() && got->second > 0)
+                    result.insert(getVector(it->first, it->first, got->first));
+                currentSum -= it->first;
+                it->second++;
             }
 
             // it once, then something else, then something else
             for (auto that = next(it); that != numCounts.end(); ++that)
             {
-                currentSum += that->first;
-                // already covered this case in the mod2 check above
-                if (currentSum != -1 * that->first)
+                if (that->second > 0)
                 {
-                    got = numCounts.find(-1 * currentSum);
-                    if (got != numCounts.end())
-                        result.push_back({it->first, that->first, got->first});
-                }
+                    currentSum += that->first;
+                    that->second--;
 
-                currentSum -= that->first;
+                    got = numCounts.find(-1 * currentSum);
+                    if (got != numCounts.end() && got->second > 0)
+                        result.insert(getVector(it->first, that->first, got->first));
+
+                    that->second++;
+                    currentSum -= that->first;
+                }
+            }
+        }
+
+        return {result.begin(), result.end()};
+    }
+
+    // runtine n^2
+    // two-pointer solution
+    // ~80ms
+    vector<vector<int>> twoPointer(vector<int> &nums)
+    {
+        sort(nums.begin(), nums.end());
+        vector<vector<int>> result;
+        vector<int> current;
+
+        for (int i = 0; i < nums.size() - 2; ++i)
+        {
+            // skip duplicating this num
+            if (i > 0 && nums[i] == nums[i - 1])
+                continue;
+            int lo = i + 1;
+            int hi = nums.size() - 1;
+            while (lo < hi)
+            {
+                int sum = nums[i] + nums[lo] + nums[hi];
+                if (sum < 0)
+                {
+                    ++lo;
+                }
+                else if (sum > 0)
+                {
+                    --hi;
+                }
+                else
+                {
+                    result.push_back({nums[i], nums[lo], nums[hi]});
+                    // do
+                    // {
+                        --hi;
+                    // } while (lo < hi && nums[hi] == nums[hi - 1]);
+                    do
+                    {
+                        ++lo;
+                    } while (lo < hi && nums[lo] == nums[lo - 1]);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // runtime n^2
+    // ~1800ms what why so much slower than two pointer??
+    vector<vector<int>> withMapAndSorting(vector<int> &nums)
+    {
+        sort(nums.begin(), nums.end());
+        vector<vector<int>> result;
+
+        for (int i = 0; i < nums.size(); ++i)
+        {
+            if (nums[i] > 0)
+                break;
+            if (i > 0 && nums[i] == nums[i - 1])
+                continue;
+
+            unordered_set<int> seen;
+            for (int j = i + 1; j < nums.size(); ++j)
+            {
+                int complement = -nums[i] - nums[j];
+                if (seen.count(complement))
+                {
+                    result.push_back({nums[i], complement, nums[j]});
+                    while (j + 1 < nums.size() && nums[j] == nums[j + 1])
+                        ++j;
+                }
+                seen.insert(nums[j]);
             }
         }
 
@@ -140,6 +225,8 @@ public:
         if (nums.size() < 3)
             return {};
         // return bruteForce(nums);
-        return withMap(nums);
+        // return withMap(nums);
+        return twoPointer(nums);
+        // return withMapAndSorting(nums);
     }
 };

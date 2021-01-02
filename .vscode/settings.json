@@ -5,6 +5,10 @@
         "utility": "cpp",
         "map": "cpp",
         "iosfwd": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_set": "cpp",
+        "set": "cpp"
     }
 }
