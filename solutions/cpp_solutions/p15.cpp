@@ -174,10 +174,10 @@ public:
                 else
                 {
                     result.push_back({nums[i], nums[lo], nums[hi]});
-                    // do
-                    // {
+                    do
+                    {
                         --hi;
-                    // } while (lo < hi && nums[hi] == nums[hi - 1]);
+                    } while (lo < hi && nums[hi] == nums[hi + 1]);
                     do
                     {
                         ++lo;
