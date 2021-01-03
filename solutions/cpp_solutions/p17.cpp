@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <cmath>
 using namespace std;
 
 // Letter Combinations of a Phone Number - Medium
@@ -46,6 +47,8 @@ public:
         {
             int arr_length = result.size();
             int word_length = result[0].size();
+            // reserve enough space for the words to be added (only does something if more space needed)
+            result.reserve(arr_length * letters.size());
 
             // add a new word for each old word and each letter
             for (int i = 0; i < arr_length; ++i)
@@ -69,6 +72,8 @@ public:
     vector<string> bruteForce(string digits)
     {
         vector<string> result{};
+        // reserve enough space for at least 3 letters per digit
+        result.reserve(pow(3, digits.size()));
         for (char c : digits)
         {
             addDigit(result, c);
