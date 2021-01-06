@@ -1,4 +1,6 @@
 #include <vector>
+#include <algorithm>
+#include <queue>
 using namespace std;
 
 // Minimum Number of Refueling Stops - Hard
@@ -64,22 +66,130 @@ public:
         return -1;
     }
 
+    // this dynamic programming algorith is effectively n^2 time
+    // we set up a dp set, distancePossible, which tells us how far we could get in n stops
+    // at each station, we reevaluate all previous stations to see if skipping intermediate stations could lead to a longer distance
+    // ~124ms
     int dynamicProgramming(int target, int startFuel, vector<vector<int>> &stations)
     {
         int n = stations.size();
-        vector<long> memo{};
-        memo.assign(n + 1, 0);
-        memo[0] = startFuel;
+        vector<long> distancePossible{};
+        distancePossible.assign(n + 1, 0);
+        // at position 0, the furthest we can go is are starting fuel
+        distancePossible[0] = startFuel;
 
-        for (int i = 0; i < n; ++i)
-            for (int t = i; t >= 0; --t)
-                if (memo[t] >= stations[i][0])
-                    memo[t + 1] = max(memo[t + 1], memo[t] + stations[i][1]);
+        for (int here = 0; here < n; ++here)
+            // for each station that we have passed
+            for (int there = here; there >= 0; --there)
+                // if we could get "here" from there
+                // then we might be able to skip the next station after there
+                if (distancePossible[there] >= stations[here][0])
+                    distancePossible[there + 1] = max(distancePossible[there + 1], distancePossible[there] + stations[here][1]);
 
+        // return the first station which would allow us to get to the target
         for (int i = 0; i <= n; ++i)
-            if (memo[i] >= target)
+            if (distancePossible[i] >= target)
                 return i;
         return -1;
+    }
+
+    // quite a bit easier to understand than the previous solution
+    // as we pass by stations, add them to a max heap.
+    // when we run out of fuel, retroactively choose the best stations to refuel at until we have enough gas to continue
+    // heap operations are ~logn, so overall we get nlogn time
+    // ~52ms
+    int withHeap(int target, int startFuel, vector<vector<int>> &stations)
+    {
+        vector<int> bestStations;
+        int currentFuel = startFuel;
+        int prevLocation = 0;
+        int stops = 0;
+        for (int i = 0; i < stations.size(); ++i)
+        {
+            int location = stations[i][0];
+            int capacity = stations[i][1];
+            currentFuel = currentFuel - location + prevLocation;
+
+            // now that we need fuel, retroactively refuel
+            while (currentFuel < 0 && !bestStations.empty())
+            {
+                pop_heap(bestStations.begin(), bestStations.end());
+                currentFuel += bestStations.back();
+                bestStations.pop_back();
+                ++stops;
+            }
+
+            if (currentFuel < 0)
+                return -1;
+
+            bestStations.push_back(capacity);
+            push_heap(bestStations.begin(), bestStations.end());
+            prevLocation = location;
+        }
+
+        // finally, check against target
+        currentFuel = currentFuel - target + prevLocation;
+
+        // now that we need fuel, retroactively refuel
+        while (currentFuel < 0 && !bestStations.empty())
+        {
+            pop_heap(bestStations.begin(), bestStations.end());
+            currentFuel += bestStations.back();
+            bestStations.pop_back();
+            ++stops;
+        }
+
+        if (currentFuel < 0)
+            return -1;
+
+        return stops;
+    }
+
+    // exact same algorithm as withHeap, just a different data structure
+    // still nlogn
+    // ~50ms, shouldn't actually be any faster than the max_heap implementation above, just nicer looking
+    int withPriorityQueue(int target, int startFuel, vector<vector<int>> &stations)
+    {        
+        priority_queue<int> bestStations;
+        int currentFuel = startFuel;
+        int prevLocation = 0;
+        int stops = 0;
+        for (int i = 0; i < stations.size(); ++i)
+        {
+            int location = stations[i][0];
+            int capacity = stations[i][1];
+            currentFuel = currentFuel - location + prevLocation;
+
+            // now that we need fuel, retroactively refuel
+            while (currentFuel < 0 && !bestStations.empty())
+            {
+                currentFuel += bestStations.top();
+                bestStations.pop();
+                ++stops;
+            }
+
+            if (currentFuel < 0)
+                return -1;
+
+            bestStations.push(capacity);
+            prevLocation = location;
+        }
+
+        // finally, check against target
+        currentFuel = currentFuel - target + prevLocation;
+
+        // now that we need fuel, retroactively refuel
+        while (currentFuel < 0 && !bestStations.empty())
+        {
+            currentFuel += bestStations.top();
+            bestStations.pop();
+            ++stops;
+        }
+
+        if (currentFuel < 0)
+            return -1;
+
+        return stops;
     }
 
     int minRefuelStops(int target, int startFuel, vector<vector<int>> &stations)
@@ -96,6 +206,6 @@ public:
         if (stations[0][0] > startFuel)
             return -1;
 
-        return dynamicProgramming(target, startFuel, stations);
+        return withPriorityQueue(target, startFuel, stations);
     }
 };
