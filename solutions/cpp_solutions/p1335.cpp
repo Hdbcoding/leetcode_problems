@@ -2,6 +2,7 @@
 #include <numeric>
 #include <limits>
 #include <unordered_map>
+#include <stack>
 using namespace std;
 
 // Minimum Difficulty of a Job Schedule - Hard
@@ -93,6 +94,7 @@ public:
     // }
 
     // // naive recursive is very very slow - essentially O(N choose d) runtime, which is exponential in general
+    // // this one times out
     // int naiveRecursive(vector<int> &jobDifficulty, int d)
     // {
     //     naiveRecursiveInner(jobDifficulty, d, 0);
@@ -100,7 +102,15 @@ public:
     // }
 
     // O(dn^2) people in forums keep calling this O(dn), but that's a double for loop on n
-    int dynamicProgramming(vector<int> &jobDifficulty, int d)
+    // the idea is to build up solutions from solutions for smaller numbers of days
+    // for each number of days
+    //   for each starting index (ignoring the array left of the index)
+    //      for each proposed spot for a cut
+    //         the best solution at the starting index either has a cut here or not
+    //         not having a cut here would mean using the old solution for the starting index
+    //         having a cut here would mean using the max difficulty found so far after the starting index + the solution for the right hand side of this cut
+    // ~80ms
+    int dynamicProgramming(vector<int> &jobDifficulty, int totalDays)
     {
         int n = jobDifficulty.size();
         int big = numeric_limits<int>::max() - 1000;
@@ -108,29 +118,78 @@ public:
         dp.assign(n + 1, big);
         dp[n] = 0;
         //building up the best possible result for smaller to larger numbers of days
-        for (int days = 1; days <= d; ++days)
+        for (int days = 1; days <= totalDays; ++days)
         {
             // at the end of this loop, dp[0] will have the correct solution for d = days
             for (int i = 0; i <= n - days; ++i)
             {
                 // at the end of this iteration, dp[i] will have the correct solution for jobs[i::end] and d = days
-                int maxd = 0;
+                int maxDifficulty = 0;
                 dp[i] = big;
 
                 for (int j = i; j <= n - days; ++j)
                 {
-                    // maxd is the biggest job in the range jobs[i::j]
-                    maxd = max(maxd, jobDifficulty[j]);
+                    // maxDifficulty is the biggest job in the range jobs[i::j]
+                    maxDifficulty = max(maxDifficulty, jobDifficulty[j]);
                     // for dp[i], the best solution to jobs[i::end] is either:
                     //    dp[i] (a solution found in a previous iteration of this loop)
-                    //    maxd (the biggest job found so far) + dp[j + 1] (the solution for jobs[j + 1::end] && days - 1)
-                    //       (in other words, put a cut at j. the left side of the cut is just maxd, the right side is a previously calculated solution for the rest of the array)
-                    dp[i] = min(dp[i], maxd + dp[j + 1]);
+                    //    maxDifficulty (the biggest job found so far) + dp[j + 1] (the solution for jobs[j + 1::end] && days - 1)
+                    //       (in other words, put a cut at j. the left side of the cut is just maxDifficulty, the right side is a previously calculated solution for the rest of the array)
+                    dp[i] = min(dp[i], maxDifficulty + dp[j + 1]);
                 }
             }
         }
 
         return dp[0];
+    }
+
+    struct jobSegment
+    {
+        int imaxDifficultyjob;
+        int minDifficulty;
+    };
+
+    // uses a monotonic stack to track the biggest job so far, instead of a 2d loop
+    // O(d*n)
+    // ~12ms - quite fast!
+    int monotonicStack(vector<int> &jobDifficulty, int totalDays)
+    {
+        int n = jobDifficulty.size();
+        // for this dp table, dp[n - 1] will have the best solution for cuts into totalDays
+        vector<int> dp{jobDifficulty[0]};
+        // at 0 days, the only solution is the max value in the entire array
+        //   for dp[i] where i < n, dp[i] is the max difficulty to the left of i
+        for (int j = 1; j < n; ++j)
+            dp.push_back(max(dp[j - 1], jobDifficulty[j]));
+
+        // for each number of days, we want to find the cut that reduces the total difficulty the least
+        for (int days = 1; days < totalDays; ++days)
+        {
+            // this will be a monotonic stack
+            stack<jobSegment> s;
+            int t = dp[days - 1];
+
+            for (int i = days; i < n; ++i)
+            {
+                int oldMin = t;
+                t = dp[i];
+
+                // discard jobs on the stack that are less difficult than this one
+                while (!s.empty() && jobDifficulty[s.top().imaxDifficultyjob] <= jobDifficulty[i])
+                {
+                    // keep track of the easiest job seen so far
+                    oldMin = min(oldMin, s.top().minDifficulty);
+                    s.pop();
+                }
+                
+                dp[i] = oldMin + jobDifficulty[i];
+                if (!s.empty())
+                    dp[i] = min(dp[s.top().imaxDifficultyjob], dp[i]);
+
+                s.push({i, oldMin});
+            }
+        }
+        return dp[n - 1];
     }
 
     int minDifficulty(vector<int> &jobDifficulty, int d)
@@ -140,6 +199,6 @@ public:
         if (jobDifficulty.size() == d)
             return accumulate(jobDifficulty.begin(), jobDifficulty.end(), 0);
 
-        return dynamicProgramming(jobDifficulty, d);
+        return monotonicStack(jobDifficulty, d);
     }
 };
