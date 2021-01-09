@@ -146,10 +146,10 @@ public:
     struct jobSegment
     {
         int imaxDifficultyjob;
-        int minDifficulty;
+        int minSolutionDifficulty;
     };
 
-    // uses a monotonic stack to track the biggest job so far, instead of a 2d loop
+    // uses a monotonic stack to track the best solutions so far, instead of a 2d loop
     // O(d*n)
     // ~12ms - quite fast!
     int monotonicStack(vector<int> &jobDifficulty, int totalDays)
@@ -167,26 +167,34 @@ public:
         {
             // this will be a monotonic stack
             stack<jobSegment> s;
-            int t = dp[days - 1];
+            int solutionLeftOfI = dp[days - 1];
 
             for (int i = days; i < n; ++i)
             {
-                int oldMin = t;
-                t = dp[i];
+                int oldMinSolutionDifficulty = solutionLeftOfI;
+                solutionLeftOfI = dp[i];
 
                 // discard jobs on the stack that are less difficult than this one
+                // this is almost like a double loop, but I think because the stack shrinks when looped over 
+                //   it's more like O(2n) instead of O(n^2)
                 while (!s.empty() && jobDifficulty[s.top().imaxDifficultyjob] <= jobDifficulty[i])
                 {
                     // keep track of the easiest job seen so far
-                    oldMin = min(oldMin, s.top().minDifficulty);
+                    oldMinSolutionDifficulty = min(oldMinSolutionDifficulty, s.top().minSolutionDifficulty);
                     s.pop();
                 }
                 
-                dp[i] = oldMin + jobDifficulty[i];
+                // somehow isolate the minimum seen in the current segment, and select a segment where this job difficulty is the max?
+                dp[i] = oldMinSolutionDifficulty + jobDifficulty[i];
+                // if there is still anything left in the monotonic stack (i.e., there was a more difficult job in there than this one)
+                // then see if the solution for that job is better than the solution we just calculated
                 if (!s.empty())
                     dp[i] = min(dp[s.top().imaxDifficultyjob], dp[i]);
 
-                s.push({i, oldMin});
+                // i don't know if the name "iMaxDifficultyJob" is accurate exactly. 
+                // it's just the index of the latest job explored
+                // so, this is a monotonically decreasing stack, showing you the minimum solution difficulty seen to the left of index i
+                s.push({i, oldMinSolutionDifficulty});
             }
         }
         return dp[n - 1];
