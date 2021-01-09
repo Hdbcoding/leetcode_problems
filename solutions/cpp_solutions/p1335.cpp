@@ -151,12 +151,14 @@ public:
 
     // uses a monotonic stack to track the best solutions so far, instead of a 2d loop
     // O(d*n)
-    // ~12ms - quite fast!
+    // ~4-8ms - quite fast!
     int monotonicStack(vector<int> &jobDifficulty, int totalDays)
     {
         int n = jobDifficulty.size();
         // for this dp table, dp[n - 1] will have the best solution for cuts into totalDays
         vector<int> dp{jobDifficulty[0]};
+        // reserving the space cuts down on array reallocation time, though technically that has amortized cost of O(n)
+        dp.reserve(n);
         // at 0 days, the only solution is the max value in the entire array
         //   for dp[i] where i < n, dp[i] is the max difficulty to the left of i
         for (int j = 1; j < n; ++j)
@@ -184,10 +186,12 @@ public:
                     s.pop();
                 }
                 
-                // somehow isolate the minimum seen in the current segment, and select a segment where this job difficulty is the max?
+                // this is the solution where we added a cut in such a way that i is the max difficulty of this segment
+                // and oldMinSolutionDifficulty is the best solution for everything left of i
                 dp[i] = oldMinSolutionDifficulty + jobDifficulty[i];
                 // if there is still anything left in the monotonic stack (i.e., there was a more difficult job in there than this one)
                 // then see if the solution for that job is better than the solution we just calculated
+                // essentially, it might be better to not make a cut isolating jobDifficulty[i]
                 if (!s.empty())
                     dp[i] = min(dp[s.top().imaxDifficultyjob], dp[i]);
 
