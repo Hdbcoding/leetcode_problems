@@ -9,6 +9,8 @@
         "deque": "cpp",
         "string": "cpp",
         "unordered_set": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "unordered_map": "cpp",
+        "*.tcc": "cpp"
     }
 }
