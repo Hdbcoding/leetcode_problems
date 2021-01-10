@@ -18,66 +18,84 @@ using namespace std;
 class LFUCache
 {
 
-
     struct CacheNode
     {
         int key;
         int value;
         int usage{1};
-        CacheNode *next;
-        CacheNode *prev;
+        CacheNode *next{nullptr};
+        CacheNode *prev{nullptr};
     };
 
-    int capacity;
-    unordered_map<int, CacheNode> items;
-    CacheNode *head;
+    int capacity{0};
+    unordered_map<int, CacheNode*> items;
+    CacheNode *head{nullptr};
 
     void removeLeastUsedItem()
     {
         if (head == nullptr)
             return;
 
+        auto old = head;
+
         items.erase(head->key);
 
         head->next->prev = nullptr;
         head = head->next;
+
+        delete old;
     }
 
-    void addToCache(CacheNode n)
+    void addToCache(CacheNode *n)
     {
-        items[n.key] = n;
+        items[n->key] = n;
 
         // add the item to the front of the cache
-        n.next = head;
-        head->prev = &n;
+        if (head == nullptr)
+        {
+            head = n;
+        }
+        else
+        {
+            n->next = head;
+            head->prev = n;
+        }
 
         promote(n);
     }
 
-    void promote(CacheNode n)
+    void promote(CacheNode *n)
     {
         // couldn't possibly promote it more
-        if (n.next == nullptr)
+        if (n->next == nullptr)
             return;
 
         // find the next element in the cache more used than this item
-        auto here = n.next;
-        while (here->next != nullptr && n.usage >= here->usage)
+        auto here = n->next;
+        while (here->next != nullptr && n->usage >= here->usage)
             here = here->next;
 
-        // usage > last item in list
-        if (here->next == nullptr){
+        // remove n from where it is
 
-        } else {
-            
+        if (n->prev == nullptr)
+        {
+            head = n->next;
+            head->prev = nullptr;
         }
+        else
+        {
+            n->prev->next = n->next;
+            n->next->prev = n->prev;
+        }
+        n->next = nullptr;
+        n->prev = nullptr;
 
-        // pull this item out of wherever it is
-        cache.erase(n.it);
-        // add this item back to the cache before the more used item
-        cache.insert(iter, n);
-        // make sure the item knows where it is
-        n.it = iter;
+        // add n after here
+        n->next = here->next;
+        if (here->next != nullptr)
+            here->next->prev = n;
+        here->next = n;
+        n->prev = here;
     }
 
 public:
@@ -98,10 +116,10 @@ public:
             return -1;
 
         // increase the usage of this value
-        item->second.usage++;
+        item->second->usage++;
         promote(item->second);
 
-        return item->second.value;
+        return item->second->value;
     }
 
     void put(int key, int value)
@@ -113,8 +131,8 @@ public:
         auto item = items.find(key);
         if (item != items.end())
         {
-            item->second.value = value;
-            item->second.usage++;
+            item->second->value = value;
+            item->second->usage++;
             promote(item->second);
             return;
         }
@@ -122,7 +140,7 @@ public:
         if (items.size() == capacity)
             removeLeastUsedItem();
 
-        addToCache({key, value});
+        addToCache(new CacheNode{key, value});
     }
 };
 
