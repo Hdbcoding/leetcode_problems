@@ -11,6 +11,9 @@
         "unordered_set": "cpp",
         "set": "cpp",
         "unordered_map": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "ostream": "cpp",
+        "iostream": "cpp",
+        "random": "cpp"
     }
 }
