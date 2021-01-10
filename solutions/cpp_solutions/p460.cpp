@@ -17,7 +17,6 @@ using namespace std;
 
 class LFUCache
 {
-
     struct CacheNode
     {
         int key;
@@ -40,7 +39,8 @@ class LFUCache
 
         items.erase(head->key);
 
-        head->next->prev = nullptr;
+        if (head->next != nullptr)
+            head->next->prev = nullptr;
         head = head->next;
 
         delete old;
@@ -64,7 +64,7 @@ class LFUCache
     void promote(CacheNode *n)
     {
         // couldn't possibly promote it more
-        if (n->next == nullptr)
+        if (n->next == nullptr || n->next->usage > n->usage)
             return;
 
         // find the next element in the cache more used than this item
