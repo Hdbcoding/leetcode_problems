@@ -42,7 +42,7 @@ class LFUCache
         if (head == nullptr)
             return;
 
-        cout << "\tset full, deleting key" << head->key << " with usage" << head->usage << endl;
+        // cout << "\tset full, deleting key" << head->key << " with usage" << head->usage << endl;
         auto old = head;
 
         itemsByKey.erase(head->key);
@@ -71,7 +71,7 @@ class LFUCache
 
     void promote(CacheNode *n)
     {
-        cout << "\tpromoting key" << n->key << " with usage" << n->usage << endl;
+        // cout << "\tpromoting key" << n->key << " with usage" << n->usage << endl;
 
         // couldn't possibly promote it more
         if (n->next == nullptr || n->next->usage > n->usage)
@@ -81,6 +81,10 @@ class LFUCache
         auto here = n->next;
         while (here->next != nullptr && n->usage >= here->usage)
             here = here->next;
+
+        // went too far by one pointer
+        if (here->usage > n->usage)
+            here = here->prev;
 
         // remove n from where it is
         if (n->prev == nullptr)
@@ -146,6 +150,20 @@ public:
 
         addToCache(new CacheNode{key, value});
     }
+
+    void printCache()
+    {
+        cout << "\tcache: ";
+        auto ptr = head;
+        while (ptr != nullptr)
+        {
+            cout << "{ key" << ptr->key << " value" << ptr->value << " usage" << ptr->usage << " }";
+            ptr = ptr->next;
+            if (ptr != nullptr)
+                cout << ", ";
+        }
+        cout << endl;
+    }
 };
 
 /**
@@ -177,6 +195,7 @@ int main()
         {
             cout << i << ": putting: key" << arg[0] << ": value" << arg[1] << endl;
             cache->put(arg[0], arg[1]);
+            cache->printCache();
         }
         else if (command == "get")
         {
@@ -185,6 +204,7 @@ int main()
             if (result != to_string(ans))
                 cout << " !!! (expected: value" << result << ")";
             cout << endl;
+            cache->printCache();
         }
     }
 }
