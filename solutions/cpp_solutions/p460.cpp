@@ -1,6 +1,5 @@
 #include <unordered_map>
 #include <limits>
-#include <list>
 using namespace std;
 // LFU Cache - Hard
 
@@ -18,23 +17,30 @@ using namespace std;
 
 class LFUCache
 {
+
+
     struct CacheNode
     {
         int key;
         int value;
         int usage{1};
-        list<CacheNode>::iterator it;
+        CacheNode *next;
+        CacheNode *prev;
     };
 
     int capacity;
     unordered_map<int, CacheNode> items;
-    list<CacheNode> cache;
+    CacheNode *head;
 
     void removeLeastUsedItem()
     {
-        auto leastUsed = cache.front();
-        items.erase(leastUsed.key);
-        cache.pop_front();
+        if (head == nullptr)
+            return;
+
+        items.erase(head->key);
+
+        head->next->prev = nullptr;
+        head = head->next;
     }
 
     void addToCache(CacheNode n)
@@ -42,8 +48,8 @@ class LFUCache
         items[n.key] = n;
 
         // add the item to the front of the cache
-        cache.push_front(n);
-        n.it = cache.begin();
+        n.next = head;
+        head->prev = &n;
 
         promote(n);
     }
@@ -51,13 +57,21 @@ class LFUCache
     void promote(CacheNode n)
     {
         // couldn't possibly promote it more
-        if (n.key == cache.back().key)
+        if (n.next == nullptr)
             return;
 
-        auto iter = n.it;
         // find the next element in the cache more used than this item
-        while (iter != cache.end() && n.usage >= iter->usage)
-            ++iter;
+        auto here = n.next;
+        while (here->next != nullptr && n.usage >= here->usage)
+            here = here->next;
+
+        // usage > last item in list
+        if (here->next == nullptr){
+
+        } else {
+            
+        }
+
         // pull this item out of wherever it is
         cache.erase(n.it);
         // add this item back to the cache before the more used item
