@@ -23,18 +23,21 @@ class LFUCache
     {
         int key;
         int value;
-        int usage{1};
+        int usage{0};
         CacheNode *next{nullptr};
         CacheNode *prev{nullptr};
     };
 
     int capacity{0};
+    // itemsByKey allows O(1) lookup of items for get/put operations
     unordered_map<int, CacheNode *> itemsByKey;
-    // future optimization: unordered_map<int, CacheNode *> itemsByUsage;
-    //   instead of:    while (here->next->usage <= n->usage) here = here->next
-    //   could do:      here = itemsByUsage[n->usage];
-    //   itemsByUsage always maintains the most recently accessed item for a particular usage value
-    //   it may need to be updated on removeLeastUsedItem and on promote
+    // itemsByUsage contains the most recently used items in each usage class
+    // when an item is promoted in its usage, it will jump to the end of its usage class using this map
+    // this allows O(1) promotion of items when their usage increases
+    unordered_map<int, CacheNode *> itemsByUsage;
+    // head is the front of a doubly-linked-list of items
+    // this list has items in order of increasing usage and recency (if recency is a word)
+    // this allows O(1) lookup of the least frequently and least recently used item
     CacheNode *head{nullptr};
 
     void removeLeastUsedItem()
@@ -45,12 +48,22 @@ class LFUCache
         // cout << "\tset full, deleting key" << head->key << " with usage" << head->usage << endl;
         auto old = head;
 
+        // if an item is being removed, and it is the record in the usage map
+        // then it is the last record of that usage value in the map
+        // and we can remove that usage value from the map
+        auto usage = itemsByUsage.find(old->usage);
+        if (usage->second == old)
+            itemsByUsage.erase(usage);
+
+        // remove the value from the keymap
         itemsByKey.erase(head->key);
 
+        // update the head of the list cache
         if (head->next != nullptr)
             head->next->prev = nullptr;
         head = head->next;
 
+        // don't leak memory when we're done with this item
         delete old;
     }
 
@@ -58,7 +71,7 @@ class LFUCache
     {
         itemsByKey[n->key] = n;
 
-        // add the item to the front of the cache
+        // add the item to the head of the cache
         if (head != nullptr)
         {
             n->next = head;
@@ -71,39 +84,66 @@ class LFUCache
 
     void promote(CacheNode *n)
     {
-        // cout << "\tpromoting key" << n->key << " with usage" << n->usage << endl;
+        // check if this was the most recently used item in this usage class
+        // check if the item before this one has the same usage
+        //   if it does, update the usage map to use the older value
+        //   if it doesn't, remove this key from the usage map
+        // at the end of this block, n must not be in the usage map
+        auto oldUsage = itemsByUsage.find(n->usage);
+        if (oldUsage != itemsByUsage.end() && oldUsage->second == n)
+        {
+            if (n->prev == nullptr || n->prev->usage != n->usage)
+                itemsByUsage.erase(n->usage);
+            else
+                oldUsage->second = n->prev;
+        }
 
-        // couldn't possibly promote it more
-        if (n->next == nullptr || n->next->usage > n->usage)
+        // cout << "\tpromoting key" << n->key << " with usage" << n->usage << " to " << n->usage + 1 << endl;
+
+        // increase the usage of this item
+        n->usage++;
+
+        // if the item is less used than the next most used thing, or it's the most used thing
+        // then we can't promote this item
+        // make n the leader of its usage class
+        if (n->next == nullptr || n->next->usage > n->usage){
+            itemsByUsage[n->usage] = n;
             return;
-
-        // find the next element in the cache more used than this item
-        auto here = n->next;
-        while (here->next != nullptr && n->usage >= here->usage)
-            here = here->next;
-
-        // went too far by one pointer
-        if (here->usage > n->usage)
-            here = here->prev;
-
-        // remove n from where it is
-        if (n->prev == nullptr)
-        {
-            head = n->next;
-            head->prev = nullptr;
-        }
-        else
-        {
-            n->prev->next = n->next;
-            n->next->prev = n->prev;
         }
 
-        // add n after here
-        n->next = here->next;
-        if (here->next != nullptr)
-            here->next->prev = n;
-        here->next = n;
-        n->prev = here;
+        // now we want to jump to the end of the current or the previous usage class.
+        // if there is no record for itemsByUsage[n->usage], then n needs to move to the end of the usage class it was in previously
+        // if there is no record for itemsByUsage[n->usage -1], then n is already in the correct position in the list
+        auto usage = itemsByUsage.find(n->usage);
+        if (usage == itemsByUsage.end())
+            usage = itemsByUsage.find(n->usage - 1);
+
+        if (usage != itemsByUsage.end())
+        {
+            auto here = usage->second;
+
+            // remove n from where it is
+            if (n->prev == nullptr)
+            {
+                head = n->next;
+                head->prev = nullptr;
+            }
+            else
+            {
+                n->prev->next = n->next;
+                n->next->prev = n->prev;
+            }
+
+            // add n after here
+            n->next = here->next;
+            if (here->next != nullptr)
+                here->next->prev = n;
+            here->next = n;
+            n->prev = here;
+        }
+
+        // make n the leader of its usage class
+        itemsByUsage[n->usage] = n;
     }
 
 public:
@@ -111,6 +151,7 @@ public:
     {
         this->capacity = capacity;
         itemsByKey.reserve(capacity);
+        itemsByUsage.reserve(capacity);
     }
 
     int get(int key)
@@ -124,7 +165,6 @@ public:
             return -1;
 
         // increase the usage of this value
-        item->second->usage++;
         promote(item->second);
 
         return item->second->value;
@@ -140,11 +180,11 @@ public:
         if (item != itemsByKey.end())
         {
             item->second->value = value;
-            item->second->usage++;
             promote(item->second);
             return;
         }
 
+        // if we are full, remove the least used item
         if (itemsByKey.size() == capacity)
             removeLeastUsedItem();
 
@@ -153,14 +193,18 @@ public:
 
     void printCache()
     {
-        cout << "\tcache: ";
+        cout << "\tlist cache: ";
         auto ptr = head;
         while (ptr != nullptr)
         {
-            cout << "{ key" << ptr->key << " value" << ptr->value << " usage" << ptr->usage << " }";
+            cout << " { key" << ptr->key << " value" << ptr->value << " usage" << ptr->usage << " }";
             ptr = ptr->next;
-            if (ptr != nullptr)
-                cout << ", ";
+        }
+        cout << endl;
+
+        cout << "\tusage cache: ";
+        for (auto &pair : itemsByUsage){
+            cout << " { usage" << pair.first << " key" << pair.second->key << " }";
         }
         cout << endl;
     }
