@@ -51,15 +51,12 @@ class LFUCache
         items[n->key] = n;
 
         // add the item to the front of the cache
-        if (head == nullptr)
-        {
-            head = n;
-        }
-        else
+        if (head != nullptr)
         {
             n->next = head;
             head->prev = n;
         }
+        head = n;
 
         promote(n);
     }
@@ -76,7 +73,6 @@ class LFUCache
             here = here->next;
 
         // remove n from where it is
-
         if (n->prev == nullptr)
         {
             head = n->next;
