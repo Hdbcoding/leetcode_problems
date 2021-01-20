@@ -16,6 +16,7 @@
         "iostream": "cpp",
         "random": "cpp",
         "array": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "initializer_list": "cpp"
     }
 }
