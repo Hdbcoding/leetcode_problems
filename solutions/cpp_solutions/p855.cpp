@@ -21,12 +21,12 @@ struct gap
 
     const int length() const
     {
-        return end - start + 1;
+        return end - start + (full ? 0 : 1);
     }
 
     const int halfLength() const
     {
-        return length() / 2;
+        return (length() + 1) / 2;
     }
 
     const int middle() const
@@ -47,14 +47,16 @@ struct gapComparator
         if (a.start == b.start)
             return false;
 
-
         int ahl = a.halfLength(), bhl = b.halfLength();
 
-        // hack for my weird choice of the first index of the gap being full
-        if (!a.full)
-            ++ahl;
-        if (!b.full)
-            ++bhl;
+        // special case - if the first gap is empty, the distance to the nearest seat is the entire length of the gap
+        // another special case - if the gap has no following gap, the distance to the nearest seat is the entire length of the gap
+
+        if (!a.full || a.next == -1)
+            ahl = a.length();
+
+        if (!b.full || b.next == -1)
+            bhl = b.length();
 
         // if half lengths are equal, return the earlier gap
         // otherwise, return the bigger gap
@@ -191,31 +193,43 @@ public:
  * obj->leave(p);
  */
 
-int main()
+void evaluateProblem(int seats, const vector<bool> &sits, const vector<int> &indices)
 {
-    // ExamRoom room(10);
-    // int seat = room.seat();
-    // seat = room.seat();
-    // seat = room.seat();
-    // seat = room.seat();
-    // room.leave(4);
-    // seat = room.seat();
-
-    // ["ExamRoom","seat","seat","seat","leave","leave","seat","seat","seat","seat","seat","seat","seat","seat","seat","leave","leave","seat","seat","leave","seat","leave","seat","leave","seat","leave","seat","leave","leave","seat","seat","leave","leave","seat","seat","leave"]
-    // [[10],[],[],[],0,4,[],[],[],[],[],[],[],[],[],0,4,[],[],7,[],3,[],3,[],9,[],0,8,[],[],0,8,[],[],2]
-    // expected: [null,0,9,4,null,null,0,4,2,6,1,3,5,7,8,null,null,0,4,null,7,null,3,null,3,null,9,null,null,0,8,null,null,0,8,null]
-    ExamRoom room2{10};
-    vector<bool> sits{true, true, true, false, false, true, true, true, true, true, true, true, true, true, false, false, true, true, false, true, false, true, false, true, false, true, false, false, true, true, false, false, true, true, false};
-    vector<int> indices{-1, -1, -1, 0, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 4, -1, -1, 7, -1, 3, -1, 3, -1, 9, -1, 0, 8, -1, -1, 0, 8, -1, -1, 2};
-    for (int i = 0; i < sits.size(); ++i){
-        if (sits[i]){
+    cout << "Evaluating exam room with " << seats << " seats" << endl;
+    ExamRoom room{seats};
+    for (int i = 0; i < sits.size(); ++i)
+    {
+        if (sits[i])
+        {
             cout << "choosing an empty seat" << endl;
-            int sit = room2.seat();
+            int sit = room.seat();
             cout << "seat " << sit << " was chosen" << endl;
-        } else {
+        }
+        else
+        {
             cout << "clearing seat " << indices[i] << endl;
-            room2.leave(indices[i]);
+            room.leave(indices[i]);
             cout << "cleared seat " << indices[i] << endl;
         }
     }
+}
+
+int main()
+{
+    // ["ExamRoom","seat","seat","seat","leave","leave","seat","seat","seat","seat","seat","seat","seat","seat","seat","leave","leave","seat","seat","leave","seat","leave","seat","leave","seat","leave","seat","leave","leave","seat","seat","leave","leave","seat","seat","leave"]
+    // [[10],[],[],[],0,4,[],[],[],[],[],[],[],[],[],0,4,[],[],7,[],3,[],3,[],9,[],0,8,[],[],0,8,[],[],2]
+    // expected: [null,0,9,4,null,null,0,4,2,6,1,3,5,7,8,null,null,0,4,null,7,null,3,null,3,null,9,null,null,0,8,null,null,0,8,null]
+    vector<bool> sits{true, true, true, false, false, true, true, true, true, true, true, true, true, true, false, false, true, true, false, true, false, true, false, true, false, true, false, false, true, true, false, false, true, true, false};
+    vector<int> indices{-1, -1, -1, 0, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 4, -1, -1, 7, -1, 3, -1, 3, -1, 9, -1, 0, 8, -1, -1, 0, 8, -1, -1, 2};
+    evaluateProblem(10, sits, indices);
+
+    // ["ExamRoom","seat","seat","seat","leave","leave","seat","seat","seat","seat","seat","seat","seat"]
+    // [[8],[],[],[],[0],[7],[],[],[],[],[],[],[]]
+    vector<bool> sits2{true, true, true, false, false, true, true, true, true, true, true, true};
+    vector<int> indices2{-1, -1, -1, 0, 7, -1, -1, -1, -1, -1, -1, -1};
+    evaluateProblem(8, sits2, indices2);
+
+    // ["ExamRoom","seat","seat","seat","seat","leave","leave","seat"]
+    // [[4],[],[],[],[],[1],[3],[]]
+    evaluateProblem(4, {true, true, true, true, false, false, true}, {0, 0, 0, 0, 1, 3, 0});
 }
