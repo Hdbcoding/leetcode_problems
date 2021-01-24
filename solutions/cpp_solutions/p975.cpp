@@ -109,26 +109,25 @@ class Solution {
         
         for (int i = n - 2; i >= 0; --i)
         {
-            // try to make an odd jump
-            // find this value
-            auto oddIt = seen.find(A[i]);
-            // if we haven't seen this, find the next greater thing
-            if (oddIt == seen.end()) oddIt = seen.upper_bound(A[i]);
-
-            // if there is a valid odd jump from here, find out if we could get all the way to the end from here
-            if (oddIt != seen.end()) oddJump[i] = evenJump[oddIt->second];
-            
-            // try to make an even jump
-            // find this value, or the next greater thing
-            auto evenIt = seen.lower_bound(A[i]);
-            // if there isn't anything equal to or greater, check the last element (it logically must be smaller)
-            if (evenIt == seen.end()) evenIt = prev(evenIt);
-            // if we have something bigger than this item, check the next smaller element
-            // (if we're currently looking at the smallest element, set it to the end)
-            else if (evenIt->first > A[i]) evenIt = (evenIt == seen.begin() ? seen.end() : prev(evenIt));
-
-            // if there is a valid even jump from here, find out if we could get all the way to the end from here
-            if (evenIt != seen.end()) evenJump[i] = oddJump[evenIt->second];
+            // if we've already seen this key, we can check for even and odd jumps from here
+            auto findIt = seen.find(A[i]);
+            if (findIt != seen.end())
+            {
+                oddJump[i] = evenJump[findIt->second];
+                evenJump[i] = oddJump[findIt->second];
+            } else {
+                // otherwise, check for the next greater and next lower elements
+                // upper_bound -> first thing strictly greater than v
+                auto oddIt = seen.upper_bound(A[i]);
+                if (oddIt != seen.end()) oddJump[i] = evenJump[oddIt->second];
+                
+                // lower_bound -> first thing equal to or greater than v
+                // (so we need to take the predecessor of lower bound, if it isn't the beginning)
+                auto evenIt = seen.lower_bound(A[i]);
+                if (evenIt == seen.begin()) evenIt = seen.end();
+                else evenIt = prev(evenIt);
+                if (evenIt != seen.end()) evenJump[i] = oddJump[evenIt->second];
+            }
             
             // record the earliest index where we have seen this value
             seen[A[i]] = i;
