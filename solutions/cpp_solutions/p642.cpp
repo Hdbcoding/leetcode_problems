@@ -60,6 +60,14 @@ struct trie
         int index = getInt(c);
         return branches[index];
     }
+
+    trie *addBranch(char c)
+    {
+        int index = getInt(c);
+        if (branches[index] == nullptr)
+            branches[index] = new trie();
+        return branches[index];
+    }
 };
 
 struct hot
@@ -87,50 +95,39 @@ class AutocompleteSystem
 
     trie *currentT{nullptr};
     string currentS{""};
-    char lastc{'#'};
+    char currentC{'#'};
 
     void insert(trie *t, string s, int times)
     {
         for (int i = 0; i < s.size(); ++i)
-        {
-            int index = t->getInt(s[i]);
-            if (t->branches[index] == nullptr)
-                t->branches[index] = new trie();
-
-            t = t->branches[index];
-        }
-        t->times += times; // last node in a branch gets a sentence length
+            t = t->addBranch(s[i]);
+            
+        // last node in a branch gets a sentence length
+        t->times += times;
     }
 
-    priority_queue<hot> lookup(trie *t, string s)
-    {
-        priority_queue<hot> ret;
-
-        for (int i = 0; i < s.size(); ++i)
-        {
-            trie *next = t->getBranch(s[i]);
-            if (next == nullptr)
-                return ret;
-            t = next;
-        }
-        traverse(s, t, ret);
-
-        return ret;
-    }
-
-    priority_queue<hot> lookupNext()
+    vector<string> lookupNext()
     {
         if (currentT == nullptr)
             return {};
 
-        currentT = currentT->getBranch(lastc);
+        currentT = currentT->getBranch(currentC);
 
         if (currentT == nullptr)
             return {};
 
-        priority_queue<hot> ret;
-        traverse(currentS, currentT, ret);
-        return ret;
+        priority_queue<hot> top3;
+        traverse(currentS, currentT, top3);
+
+        vector<string> res;
+        while (!top3.empty())
+        {
+            res.push_back(top3.top().sentence);
+            top3.pop();
+        }
+        reverse(res.begin(), res.end());
+
+        return res;
     }
 
     void traverse(string s, trie *t, priority_queue<hot> &ret)
@@ -146,25 +143,27 @@ class AutocompleteSystem
             toVisit.pop();
 
             if (nextT->times > 0)
-                addToQueue(nextS, nextT->times, ret);
+                addToResult(nextS, nextT->times, ret);
 
-            for (char i = 'a'; i <= 'z'; ++i)
-            {
-                trie *nextT2 = nextT->getBranch(i);
-                if (nextT2 != nullptr)
-                    toVisit.push({nextT2, nextS + i});
-            }
-            trie *nextT3 = nextT->getBranch(' ');
-            if (nextT3 != nullptr)
-                toVisit.push({nextT3, nextS + ' '});
+            for (char c = 'a'; c <= 'z'; ++c)
+                tryAddToQueue(nextT, c, nextS, toVisit);
+
+            tryAddToQueue(nextT, ' ', nextS, toVisit);
         }
     }
 
-    void addToQueue(string &s, int times, priority_queue<hot> &ret)
+    void addToResult(string &s, int times, priority_queue<hot> &ret)
     {
         ret.push({s, times});
         if (ret.size() == 4)
             ret.pop();
+    }
+
+    void tryAddToQueue(trie *t, char c, const string &s, queue<pair<trie *, string>> &toVisit)
+    {
+        trie *next = t->getBranch(c);
+        if (next != nullptr)
+            toVisit.push({next, s + c});
     }
 
 public:
@@ -182,7 +181,6 @@ public:
 
     vector<string> input(char c)
     {
-        lastc = c;
         if (c == '#')
         {
             insert(root, currentS, 1);
@@ -191,18 +189,9 @@ public:
             return {};
         }
 
+        currentC = c;
         currentS += c;
-        // priority_queue<hot> list = lookup(root, currentS);
-        priority_queue<hot> list = lookupNext();
 
-        vector<string> res;
-        while (!list.empty())
-        {
-            res.push_back(list.top().sentence);
-            list.pop();
-        }
-        reverse(res.begin(), res.end());
-
-        return res;
+        return lookupNext();
     }
 };
