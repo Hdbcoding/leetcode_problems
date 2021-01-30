@@ -100,7 +100,6 @@ class AutocompleteSystem {
             int index = getInt(s[i]);
             trie *next = t->branches[index];
             if (next == nullptr) return ret;
-            
             t = next;
         }
         traverse(s, t, ret);
@@ -110,12 +109,15 @@ class AutocompleteSystem {
     
     priority_queue<hot> lookupNext()
     {
+        if (currentT == nullptr)
+            return {};
+
         int index = getInt(lastc);
-        trie *next = currentT->branches[index];
-        if (next == nullptr) return {};
-        currentT = next;
+        currentT = currentT->branches[index];
+        if (currentT == nullptr) return {};
+
         priority_queue<hot> ret;
-        traverse(currentS, next, ret);
+        traverse(currentS, currentT, ret);
         return ret;
     }
     
@@ -163,8 +165,8 @@ public:
         }
         
         currentS += c;
-        // priority_queue<hot> list = lookup(root, currentS);
-        priority_queue<hot> list = lookupNext();
+        priority_queue<hot> list = lookup(root, currentS);
+        // priority_queue<hot> list = lookupNext();
         
         vector<string> res;
         while (!list.empty())
