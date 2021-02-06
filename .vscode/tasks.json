@@ -3,7 +3,7 @@
         {
             "type": "cppbuild",
             "label": "C/C++: g++.exe build active file",
-            "command": "C:\\Mingw-w64\\mingw-w64-8.1.0-x86_x64\\mingw64\\bin\\\\g++.exe",
+            "command": "C:\\Mingw-w64\\mingw-w64-8.1.0-x86_x64\\mingw64\\bin\\g++.exe",
             "args": [
                 "-g",
                 "${file}",
