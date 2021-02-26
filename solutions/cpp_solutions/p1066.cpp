@@ -2,6 +2,7 @@
 #include <queue>
 #include <algorithm>
 #include <limits>
+#include <cmath>
 
 using namespace std;
 
@@ -33,7 +34,163 @@ class Solution
 public:
     int assignBikes(vector<vector<int>> &workers, vector<vector<int>> &bikes)
     {
-        return greedy(workers, bikes);
+        return topdown(workers, bikes);
+    }
+
+    // top-down memoization + pruning doesn't work because I still need to know the results of the later smaller subproblems to calculate later subproblems
+    // pruning by pushing a variable down like this would cause me to miss out on real solutions later
+    int topdown_prune(vector<vector<int>> &workers, vector<vector<int>> &bikes)
+    {
+        minOverall = numeric_limits<int>::max();
+        int maxBits = pow(2, bikes.size());
+        vector<vector<int>> memo(workers.size(), vector<int>(maxBits, -1));
+        return topdown_prune_inner(workers, bikes, 0, 0, 0, memo);
+    }
+
+    int topdown_prune_inner(vector<vector<int>> &workers, vector<vector<int>> &bikes, int workerI, int bikeBits, int sum, vector<vector<int>> &memo)
+    {
+        if (workerI == workers.size())
+        {
+            minOverall = min(minOverall, sum);
+            return 0;
+        }
+
+        if (minOverall < sum)
+            return numeric_limits<int>::max();
+
+        if (memo[workerI][bikeBits] == -1)
+        {
+            int minValue = numeric_limits<int>::max();
+            for (int i = 0; i < bikes.size(); ++i)
+            {
+                int flag = 1 << i;
+                // skip if already using this worker
+                if (bikeBits & flag)
+                    continue;
+
+                int dist = distance(workers[workerI], bikes[i]);
+
+                // if I haven't used this bike yet, try using them
+                bikeBits |= flag;
+                int rest = topdown_prune_inner(workers, bikes, workerI + 1, bikeBits, sum + dist, memo);
+                // unuse this bike so the next worker can use them
+                bikeBits ^= flag;
+
+                if (rest != numeric_limits<int>::max())
+                    minValue = min(minValue, rest + dist);
+            }
+            memo[workerI][bikeBits] = minValue;
+        }
+
+        return memo[workerI][bikeBits];
+    }
+
+    int topdown(vector<vector<int>> &workers, vector<vector<int>> &bikes)
+    {
+        int maxBits = pow(2, bikes.size());
+        vector<vector<int>> memo(workers.size(), vector<int>(maxBits, -1));
+        return topdownInner(workers, bikes, 0, 0, memo);
+    }
+
+    int topdownInner(vector<vector<int>> &workers, vector<vector<int>> &bikes, int workerI, int bikeBits, vector<vector<int>> &memo)
+    {
+        if (workerI == workers.size())
+            return 0;
+
+        if (memo[workerI][bikeBits] == -1)
+        {
+            int minValue = numeric_limits<int>::max();
+            for (int i = 0; i < bikes.size(); ++i)
+            {
+                int flag = 1 << i;
+                // skip if already using this worker
+                if (bikeBits & flag)
+                    continue;
+
+                // if I haven't used this bike yet, try using them
+                bikeBits |= flag;
+                int rest = topdownInner(workers, bikes, workerI + 1, bikeBits, memo);
+                // unuse this bike so the next worker can use them
+                bikeBits ^= flag;
+
+                if (rest != numeric_limits<int>::max())
+                    minValue = min(minValue, rest + distance(workers[workerI], bikes[i]));
+            }
+            memo[workerI][bikeBits] = minValue;
+        }
+
+        return memo[workerI][bikeBits];
+    }
+
+    int minOverall;
+    int prune(vector<vector<int>> &workers, vector<vector<int>> &bikes)
+    {
+        minOverall = numeric_limits<int>::max();
+        return pruneInner(workers, bikes, 0, 0, 0);
+    }
+
+    int pruneInner(vector<vector<int>> &workers, vector<vector<int>> &bikes, int workerI, int bikeBits, int sum)
+    {
+        if (workerI == workers.size())
+        {
+            minOverall = min(minOverall, sum);
+            return 0;
+        }
+
+        if (minOverall < sum)
+            return numeric_limits<int>::max();
+
+        int minValue = numeric_limits<int>::max();
+        for (int i = 0; i < bikes.size(); ++i)
+        {
+            int flag = 1 << i;
+            // skip if already using this worker
+            if (bikeBits & flag)
+                continue;
+
+            int dist = distance(workers[workerI], bikes[i]);
+
+            // if I haven't used this bike yet, try using them
+            bikeBits |= flag;
+            int rest = pruneInner(workers, bikes, workerI + 1, bikeBits, sum + dist);
+            // unuse this bike so the next worker can use them
+            bikeBits ^= flag;
+
+            if (rest != numeric_limits<int>::max())
+                minValue = min(minValue, rest + dist);
+        }
+        return minValue;
+    }
+
+    // naive recursive solution - try every possible combination
+    int naive(vector<vector<int>> &workers, vector<vector<int>> &bikes)
+    {
+        return naiveInner(workers, bikes, 0, 0);
+    }
+
+    int naiveInner(vector<vector<int>> &workers, vector<vector<int>> &bikes, int workerI, int bikeBits)
+    {
+        if (workerI == workers.size())
+            return 0;
+
+        int minValue = numeric_limits<int>::max();
+        for (int i = 0; i < bikes.size(); ++i)
+        {
+            int flag = 1 << i;
+            // skip if already using this worker
+            if (bikeBits & flag)
+                continue;
+
+            // if I haven't used this bike yet, try using them
+            bikeBits |= flag;
+            int rest = naiveInner(workers, bikes, workerI + 1, bikeBits);
+            // unuse this bike so the next worker can use them
+            bikeBits ^= flag;
+
+            if (rest != numeric_limits<int>::max())
+                minValue = min(minValue, rest + distance(workers[workerI], bikes[i]));
+        }
+        return minValue;
     }
 
     // a greedy solution doesn't even work here
