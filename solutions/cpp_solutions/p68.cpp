@@ -8,10 +8,10 @@ using namespace std;
 
 // Given an array of words and a width maxWidth, format the text such that each line has exactly maxWidth characters and is fully (left and right) justified.
 
-// You should pack your words in a greedy approach; that is, pack as many words as you can in each line. 
+// You should pack your words in a greedy approach; that is, pack as many words as you can in each line.
 // Pad extra spaces ' ' when necessary so that each line has exactly maxWidth characters.
 
-// Extra spaces between words should be distributed as evenly as possible. 
+// Extra spaces between words should be distributed as evenly as possible.
 // If the number of spaces on a line do not divide evenly between words, the empty slots on the left will be assigned more spaces than the slots on the right.
 
 // For the last line of text, it should be left justified and no extra space is inserted between words.
@@ -22,14 +22,16 @@ using namespace std;
 // Each word's length is guaranteed to be greater than 0 and not exceed maxWidth.
 // The input array words contains at least one word.
 
-class Solution {
+class Solution
+{
 public:
-    vector<string> fullJustify(vector<string>& words, int maxWidth) {
+    vector<string> fullJustify(vector<string> &words, int maxWidth)
+    {
         int start = 0;
         int end = 0;
         vector<string> result;
         int remainingSpace{maxWidth};
-        // size of word that would exactly satisfy the remaining space 
+        // size of word that would exactly satisfy the remaining space
         // (accounting for spaces between earlier words)
         int maxPossibleWord{maxWidth};
         for (auto &w : words)
@@ -41,7 +43,9 @@ public:
                 remainingSpace -= w.size();
                 int minSpaces = end - start;
                 maxPossibleWord = remainingSpace - minSpaces;
-            } else {
+            }
+            else
+            {
                 // otherwise, process the pending row into the result
                 processMidRow(result, words, start, end, remainingSpace);
                 start = end++;
@@ -53,11 +57,12 @@ public:
         processLastRow(result, words, start, end, remainingSpace);
         return result;
     }
-    
+
     void processMidRow(vector<string> &result, vector<string> &words, int start, int end, int remainingSpace)
     {
         // no words - don't add a row
-        if (end == start) return;
+        if (end == start)
+            return;
         stringstream ss;
         ss << words[start];
         int length = end - start;
@@ -66,52 +71,50 @@ public:
         {
             for (int i = 0; i < remainingSpace; ++i)
                 ss << ' ';
-            
+
             if (length == 2)
                 ss << words[start + 1];
         }
         else
         {
             // otherwise, we need to intelligently pack all words
-            vector<int> spaces(length - 1, 0);
-            while (remainingSpace > 0)
-            {
-                int s = min(remainingSpace, (int)spaces.size());
-                for (int i = 0; i < s; ++i)
-                {
-                    ++spaces[i];
-                }
-                remainingSpace -= s;
-            }
+            int normalSpaces = remainingSpace / (length - 1);
+            int extraSpaces = remainingSpace % (length - 1);
 
-            for (int i = 0; i < spaces.size(); ++i)
+            for (int i = 0; i < length - 1; ++i)
             {
-                for (int j = 0; j < spaces[i]; ++j)
+                for (int i = 0; i < normalSpaces; ++i)
                     ss << ' ';
+                if (extraSpaces > 0)
+                {
+                    ss << ' ';
+                    --extraSpaces;
+                }
                 ss << words[start + i + 1];
             }
         }
-        
+
         result.push_back(ss.str());
     }
-    
+
     void processLastRow(vector<string> &result, vector<string> &words, int start, int end, int remainingSpace)
     {
         // no words - don't add a row
-        if (end == start) return;
+        if (end == start)
+            return;
         stringstream ss;
         ss << words[start];
         int length = end - start;
-        
+
         for (int i = start + 1; i < end; ++i)
         {
             ss << ' ' << words[i];
             --remainingSpace;
         }
-        
+
         for (int i = 0; i < remainingSpace; ++i)
             ss << ' ';
-        
+
         result.push_back(ss.str());
     }
 };
