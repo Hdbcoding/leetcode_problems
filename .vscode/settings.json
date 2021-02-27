@@ -18,6 +18,7 @@
         "array": "cpp",
         "string_view": "cpp",
         "initializer_list": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "algorithm": "cpp"
     }
 }
