@@ -1,4 +1,5 @@
 #include <vector>
+#include <stack>
 
 using namespace std;
 
@@ -14,7 +15,35 @@ public:
         if (N < 10)
             return 2;
 
-        return construction(N);
+        return constructionIter(N);
+    }
+
+    int constructionIter(int N)
+    {
+        int count = 2;
+        vector<int> numbers = {0, 1, 6, 8, 9};
+        stack<long long> q;
+        q.push(1), q.push(6), q.push(8), q.push(9);
+        while(!q.empty())
+        {
+            long long next = q.top();
+            q.pop();
+
+            long long timeten = next * 10;
+            if (timeten > N)
+                continue;
+            for (int d : numbers)
+            {
+                long long next2 = timeten + d;
+                if (next2 > N)
+                    break;
+                int result = flip(next2);
+                if (result != next2)
+                    ++count;
+                q.push(next2);
+            }
+        }
+        return count;
     }
 
     int construction(int N)
