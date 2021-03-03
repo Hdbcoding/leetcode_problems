@@ -20,10 +20,96 @@ class Solution
 public:
     int wordsTyping(vector<string> &sentence, int rows, int cols)
     {
-        for (auto &word : sentence)
-            if (word.size() > cols)
-                return 0;
+        return skipWordsFaster(sentence, rows, cols);
+    }
 
+private:
+    int skipWordsFaster(vector<string> &sentence, int rows, int cols)
+    {
+        vector<int> wordCount(sentence.size(), 0);
+        fillWordCounts(sentence, wordCount, cols);
+
+        int totalWords = 0;
+        int cycleHeight = 0;
+        int wordI = 0;
+        int row = 0;
+        for (; row < rows; ++row)
+        {
+            // we have now calculated the cycle height
+            if (row > 0 && wordI == 0)
+                break;
+            
+            // we can only get this condition if a word doesn't fit on a whole row, so we can stop processing
+            if (wordCount[wordI] == 0) 
+                return 0;
+            
+            totalWords += wordCount[wordI];
+            wordI = (wordI + wordCount[wordI]) % sentence.size();
+            ++cycleHeight;
+        }
+
+        if (rows - row > cycleHeight)
+        {
+            int totalCyclesLeft = (rows - row) / cycleHeight;
+            row += totalCyclesLeft * cycleHeight;
+            totalWords += totalCyclesLeft * totalWords;
+        }
+
+        for (; row < rows; ++row)
+        {            
+            totalWords += wordCount[wordI];
+            wordI = (wordI + wordCount[wordI]) % sentence.size();
+        }
+
+        return totalWords / sentence.size();
+    }
+    int skipWords(vector<string> &sentence, int rows, int cols)
+    {
+        // whenever a line starts with a word, we will be able to fit a certain nummber of words on the line
+        // so, we don't need to loop through every word as we fill the screen
+        // we can jump to the next line on the correct next word
+        vector<int> wordCount(sentence.size(), 0);
+        fillWordCounts(sentence, wordCount, cols);
+
+        int totalWords = 0;
+        int wordI = 0;
+        for (int i = 0; i < rows; ++i)
+        {
+            if (wordCount[wordI] == 0) 
+                return 0;
+            totalWords += wordCount[wordI];
+            wordI = (wordI + wordCount[wordI]) % sentence.size();
+        }
+        return totalWords / sentence.size();
+    }
+
+    void fillWordCounts(vector<string> &sentence, vector<int> &wordCount, int cols)
+    {
+        for (size_t i = 0; i < sentence.size(); ++i)
+        {
+            if (sentence[i].size() > cols)
+                continue;
+
+            int width = sentence[i].size();
+            int count = 1;
+            int j = (i + 1) % sentence.size();
+            while (true)
+            {
+                int wordSize = sentence[j].size();
+                width += 1 + wordSize;
+                if (width > cols)
+                    break;
+                ++count;
+                j = (j + 1) % sentence.size();
+            }
+
+            wordCount[i] = count;
+        }
+    }
+
+    // this solution is incredibly slow, taking about 1500ms
+    int naive(vector<string> &sentence, int rows, int cols)
+    {
         // repeating a sentence is going to result in a rotating period
         // "sometimes I go on a walk" in 20 char
         //  9 1 2 2 1 4 -> 19 chars total, 6 words,
@@ -54,9 +140,7 @@ public:
         {
             // we have finished a full rotation, and calculated the cycle height
             if (wordI == 0 && count > 0 && colsLeft == cols)
-            {
                 break;
-            }
 
             int wordSize = sentence[wordI].size();
             if (wordSize <= colsLeft)
@@ -75,6 +159,9 @@ public:
             }
             else
             {
+                // if a word is longer than the width of the screen, we can't fit this sentence at all
+                if (colsLeft == cols)
+                    return 0;
                 // if there is not room for this word, go to the next line and reset the amount of available space
                 --rowsLeft;
                 ++cycleHeight;
@@ -108,6 +195,9 @@ public:
             }
             else
             {
+                // if a word is longer than the width of the screen, we can't fit this sentence at all
+                if (colsLeft == cols)
+                    return 0;
                 // if there is not room for this word, go to the next line and reset the amount of available space
                 --rowsLeft;
                 ++cycleHeight;
